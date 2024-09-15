@@ -1,0 +1,10 @@
+.venv
+.ipynb_checkpoints
+chroma_langchain_db
+.DS_store
+.idea
+.ipynb_checkpoints
+CornLeafDiseaseImages
+CottonLeafDiseaseImages
+SoybeanLeafDiseaseImages
+test_images
