@@ -12,7 +12,8 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_upstage import UpstageGroundednessCheck
-
+from langchain.chains.query_constructor.base import AttributeInfo
+from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langgraph.graph import END, START, StateGraph
 from trulens.apps.langchain import WithFeedbackFilterDocuments
 from trulens.core import Feedback, TruSession
@@ -37,6 +38,7 @@ class GraphState(TypedDict):
         web_search: whether to add search
         documents: list of documents
     """
+    crop: str
     question: str
     generation: str
     web_search: str
@@ -52,11 +54,22 @@ class RetrievalGraph:
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
 
         # Get access to Chroma vector store that has NC state agriculture information
-        vectorstore = Chroma(
+        """metadata_field_info = [
+            AttributeInfo(
+                name="crop",
+                description="The crop on which the question is asked",
+                type="string",
+            ),
+        ]"""
+        self.vectorstore = Chroma(
             persist_directory="./chroma_langchain_db",
             collection_name="agriculture",
             embedding_function=OpenAIEmbeddings())
-        self.retriever = vectorstore.as_retriever()
+
+        """self.retriever = SelfQueryRetriever.from_llm(
+            llm=self.llm, vectorstore=vectorstore, metadata_field_info=metadata_field_info, verbose=True, document_contents="infromation on crops"
+        )"""
+
 
         # RAG Chain for checking relevance of retrieved documents
         prompt = hub.pull("rlm/rag-prompt")
@@ -116,10 +129,10 @@ class RetrievalGraph:
         self.app = workflow.compile()
         pprint.pprint(self.app.get_graph().draw_ascii())
 
-    def invoke(self, question):
+    def invoke(self, question, crop):
         os.environ["LANGCHAIN_TRACING_V2"] = "True"
         os.environ["LANGCHAIN_PROJECT"] = "RetrievalGraph"
-        return self.app.invoke({"question": question})["generation"]
+        return self.app.invoke({"question": question, "crop":"crop"})["generation"]
 
 
     def retrieve(self, state):
@@ -129,16 +142,32 @@ class RetrievalGraph:
         provider = OpenAI()
         f_context_relevance_score = Feedback(provider.context_relevance)
 
-        filtered_retriever = WithFeedbackFilterDocuments.of_retriever(
-            retriever=self.retriever, feedback=f_context_relevance_score, threshold=0.75
+        retriever = self.vectorstore.as_retriever()
+        metadata_field_info = [
+            AttributeInfo(
+                name="crop",
+                description="The crop on which the question is asked",
+                type="string",
+            ),
+        ]
+
+        retriever = SelfQueryRetriever.from_llm(
+            llm=self.llm, vectorstore=self.vectorstore, metadata_field_info=metadata_field_info, verbose=True,
+            document_contents="information on crops"
         )
+        filtered_retriever = WithFeedbackFilterDocuments.of_retriever(
+            retriever=retriever, feedback=f_context_relevance_score, threshold=0.75,
+        )
+
 
         template = """You are an AI language model assistant. Your task is to break down the larger question
                 you get into smaller subquestions to do a vector store retrieval on. 
 
                 Provide a list of subquestions that can be used to search the web for more information.
 
-                Original question: {question}"""
+                Original question: {question}
+                Crop: {crop}
+                """
         prompt_sub_q = ChatPromptTemplate.from_template(template)
 
         from langchain_core.output_parsers import StrOutputParser
@@ -152,7 +181,7 @@ class RetrievalGraph:
         )
 
         #retrieval_chain = generate_queries | map(filtered_retriever.get_relevant_documents) | self.get_unique_union
-        questions = generate_queries.invoke({"question": question})
+        questions = generate_queries.invoke({"question": question, "crop": state["crop"]})
         print("questions asked ", questions)
 
         retrieved_docs = []
@@ -160,7 +189,7 @@ class RetrievalGraph:
             docs = filtered_retriever.get_relevant_documents(question)
             print("question", question)
             print("docs", docs)
-            retrieved_docs.append(docs)
+            retrieved_docs.append(docs[:])
 
         print("retrieved documents ...", retrieved_docs)
         docs = self.get_unique_union(retrieved_docs)
@@ -284,5 +313,5 @@ if __name__ == "__main__":
                 - give dates when the pesticides should be applied
             - Where to get the pesticides from
                 - Give the websites where the farmer can buy the pesticides
-    """)
+    """, crop="corn")
     print(state)

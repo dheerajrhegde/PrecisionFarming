@@ -49,21 +49,23 @@ tackle_insect, tackle_disease - uses the retrieval graph to get needed informati
 
 ### Nodes in retreival graph
 
-Retreive - Uses multi query translation to break down larger and complex queries into simple questions to do a vector search on. Uses metadata filtering to only get chunks from the guide that is related to the crop the farmer is growing. 
+Below parts together for a Corrective RAG system gets the best possible retrieval using multi-query, query rewriting, active retrieval.
 
-Context relevence - 
+Retrieve - Uses multi query translation to break down larger and complex queries into simple questions to do a vector search on. Uses metadata (SelfQueryRetriever) filtering to only get chunks from the guide that is related to the crop the farmer is growing. 
 
-Web Search - 
+Context relevance - Uses trulens to confirm that retrieved context is relevent to the question to answer. Since we are using trulens.apps.langchain.WithFeedbackFilterDocuments, we only need to check if there is any document available in the "documents" state
 
-Generate Response - 
+Web Search - Performs a websearch using Tivaly to get information in case reteival does not give us the needed information. PArt of the CRAG system.
 
-Response Grounded - 
+Generate Response - Simple LLM call with context to generate the answer. 
 
-Transform Query - 
+Response Grounded - Checks if the response is grounded using upstage. 
+
+Transform Query - Rewrite the whole question if needed.
 
 ### Image Classification - Insect and Leaf (CNN using Tensorflow)
 
-fine tuning of the ImageNet with softmax in last layer for multiclass classification. 
+Fine-tuning of the ImageNet with softmax in last layer for multiclass classification. 
 
 ## Final response
 <img width="1117" alt="image" src="https://github.com/user-attachments/assets/fb76a47c-2f11-4896-9921-7174af7a58bd">
