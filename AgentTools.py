@@ -41,6 +41,7 @@ class CropName(BaseModel):
 
 class CropQuestion(BaseModel):
     crop_question: str = Field(..., description="Question on the crop")
+    crop: str = Field(..., description="Name of the field crop to get information for")
 
 class Guidance(BaseModel):
     topic: str = Field(description="Tppic heading for the topic in your response. Example 'Watering plan'")
@@ -171,18 +172,18 @@ def decrease_ph(current_ph, desired_ph, soil_area_acres):
     return aluminum_sulfate_needed
 
 @tool(args_schema=CropQuestion)
-def get_crop_info(crop_question):
+def get_crop_info(crop_question, crop):
     """
     Ask a question about the crop that the farmer is growing.
     """
-    return retrieval_graph.invoke(crop_question)
+    return retrieval_graph.invoke(crop_question, crop)
 
 @tool(args_schema=CropQuestion)
-def fertilizer_to_add(crop_question):
+def fertilizer_to_add(crop_question, crop):
     """
     Get the recommended fertilizer for a specific crop.
     """
-    return retrieval_graph.invoke(crop_question)
+    return retrieval_graph.invoke(crop_question, crop)
 
 class CropDisease(BaseModel):
     crop: str = Field(..., description="Crop to protect")
@@ -219,7 +220,7 @@ def tackle_disease(crop, disease_name, moisture, weather, irrigation_plan):
     )
     question = prompt_template.format(crop=crop, disease=disease_name, moisture=moisture, weather=weather, irrigation_plan=irrigation_plan)
 
-    print("Tackling disease", question)
+    print("Tackling disease", question, crop)
     return retrieval_graph.invoke(question, crop)
 
 class CropInsect(BaseModel):
@@ -258,5 +259,5 @@ def tackle_insect(crop, insect_name, moisture, weather, irrigation_plan):
     question = prompt_template.format(crop=crop, insect_name=insect_name, moisture=moisture, weather=weather,
                                       irrigation_plan=irrigation_plan)
 
-    print("Tackling insect", question)
+    print("Tackling insect", question, crop)
     return retrieval_graph.invoke(question, crop)
