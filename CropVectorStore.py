@@ -15,13 +15,13 @@ class CropVectorStore:
         return re.sub(r"\n\n+", "\n\n", soup.text).strip()
 
     def create_vector_store(self):
-        loader = PyPDFLoader("guides/soybean.pdf") #RecursiveUrlLoader("https://soybeans.ces.ncsu.edu/", extractor=self.bs4_extractor)
+        loader = PyPDFLoader("Guides/soybean.pdf") #RecursiveUrlLoader("https://soybeans.ces.ncsu.edu/", extractor=self.bs4_extractor)
         docs = loader.load()
         print("sybeans.ces.ncsu.edu", len(docs))
-        loader = PyPDFLoader("guides/corn.pdf") #RecursiveUrlLoader("https://corn.ces.ncsu.edu/", extractor=self.bs4_extractor)
+        loader = PyPDFLoader("Guides/corn.pdf") #RecursiveUrlLoader("https://corn.ces.ncsu.edu/", extractor=self.bs4_extractor)
         docs = docs + loader.load()
         print("sybeans.ces.ncsu.edu + corn.ces.ncsu.edu", len(docs))
-        loader = PyPDFLoader("guides/cotton.pdf") #RecursiveUrlLoader("https://cotton.ces.ncsu.edu/", extractor=self.bs4_extractor)
+        loader = PyPDFLoader("Guides/cotton.pdf") #RecursiveUrlLoader("https://cotton.ces.ncsu.edu/", extractor=self.bs4_extractor)
         docs = docs + loader.load()
         print("sybeans.ces.ncsu.edu + corn.ces.ncsu.edu + cottton.ces.ncsu.edu", len(docs))
         for document in docs:
