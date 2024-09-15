@@ -31,7 +31,9 @@ The core engine is developed using LangChain, LangGraph, and OpenAI. The engine 
 ## Technical details
 The anchor for the graph is a function calling agentic workflow that uses Open AI and LangGraph. The graph has at its disposal few tools that it can decide to call based on the need. And once it has all the informationm, it puts together a structured markdown response to be given back to the user.
 
-<img width="612" alt="image" src="https://github.com/user-attachments/assets/ad946711-f02e-4c7f-9142-d5a93c8bd757">
+
+<img width="612" alt="image" src="https://github.com/user-attachments/assets/36a6b7e8-48be-4b84-b568-e2e54f3bc644">
+
 
 *** Key Decision: *** The controlling is an agentic tool based workflow with just the nodes to call tools and LLM. We decided to go with this approach instead of a well defined graph and nodes to ensure that the core graph can be chatty and refine the response as needed to meet the expectatios of the prompt. In contrary, the retrieval graph is well defined with specific nodes and conditional edges that takes a task from START to END. Retrieval graph was define in that way since we knew exactly how to get a well grounded intermediate response.  
 
