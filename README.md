@@ -67,6 +67,41 @@ Transform Query - Rewrite the whole question if needed.
 
 Fine-tuning of the ImageNet with softmax in last layer for multiclass classification. 
 
+## Getting Started
+
+***To run this locally***, you can do the following on command prompt
+```commandline
+git clone https://github.com/dheerajrhegde/PrecisionFarming
+cd PrecisionFarming
+```
+Go into the code root folder, create and activate a virtual environmetn
+```commandline
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+Setup API keys that the code uses to access OpenAI and other services. You can get your API keys from the below websites
+
+https://platform.openai.com/
+
+https://tavily.com
+
+https://console.upstage.ai/home
+
+https://www.weatherapi.com
+
+```commandline
+export OPENAI_API_KEY="your API key"
+export TAVILY_API_KEY="your API key"
+export UPSTAGE_API_KEY="your API key"
+export WEATHER_API_KEY="your API key"
+streamlit run StreamLitApp.py
+```
+
+***To run locally in a docker container*** you can follow the below instructions
+
+***To deploy it on Azure AKS*** you can follow the below instructions
+
 ## Final response
 <img width="1117" alt="image" src="https://github.com/user-attachments/assets/fb76a47c-2f11-4896-9921-7174af7a58bd">
 
