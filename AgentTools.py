@@ -220,7 +220,7 @@ def tackle_disease(crop, disease_name, moisture, weather, irrigation_plan):
     question = prompt_template.format(crop=crop, disease=disease_name, moisture=moisture, weather=weather, irrigation_plan=irrigation_plan)
 
     print("Tackling disease", question)
-    return retrieval_graph.invoke(question)
+    return retrieval_graph.invoke(question, crop)
 
 class CropInsect(BaseModel):
     crop: str = Field(..., description="Crop to protect")
@@ -259,4 +259,4 @@ def tackle_insect(crop, insect_name, moisture, weather, irrigation_plan):
                                       irrigation_plan=irrigation_plan)
 
     print("Tackling insect", question)
-    return retrieval_graph.invoke(question)
+    return retrieval_graph.invoke(question, crop)

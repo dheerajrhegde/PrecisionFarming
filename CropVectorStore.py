@@ -8,6 +8,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.vectorstores.utils import filter_complex_metadata
 from langchain_openai import OpenAIEmbeddings
 
+
 class CropVectorStore:
     def bs4_extractor(self, html: str) -> str:
         soup = BeautifulSoup(html, "lxml")
@@ -23,8 +24,10 @@ class CropVectorStore:
         loader = PyPDFLoader("guides/cotton.pdf") #RecursiveUrlLoader("https://cotton.ces.ncsu.edu/", extractor=self.bs4_extractor)
         docs = docs + loader.load()
         print("sybeans.ces.ncsu.edu + corn.ces.ncsu.edu + cottton.ces.ncsu.edu", len(docs))
+        for document in docs:
+            document.metadata["crop"] = document.metadata["source"].split("/")[1].split(".")[0]
 
-
+        print(docs[0].metadata, type(docs[0]))
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=1024, chunk_overlap=128
         )
