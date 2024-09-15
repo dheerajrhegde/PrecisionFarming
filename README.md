@@ -100,10 +100,6 @@ export WEATHER_API_KEY="your API key"
 streamlit run StreamLitApp.py
 ```
 
-***To run locally in a docker container*** you can follow the below instructions
-
-***To deploy it on Azure AKS*** you can follow the below instructions
-
 ## Final response
 <img width="1117" alt="image" src="https://github.com/user-attachments/assets/fb76a47c-2f11-4896-9921-7174af7a58bd">
 
