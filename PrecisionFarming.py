@@ -1,12 +1,15 @@
-from langgraph.graph import StateGraph, END
+import os
+import operator
+import pprint
+import uuid
 from typing import TypedDict, Annotated
-from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
-import operator, os
+
 from langchain_openai import ChatOpenAI
-import AgentTools as tools
-import pprint, uuid
+from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
 from langchain_core.output_parsers import JsonOutputParser, MarkdownListOutputParser
+from langgraph.graph import StateGraph, END
 import AgentTools as tools
+
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
@@ -18,14 +21,9 @@ class Agent:
         graph = StateGraph(AgentState)
         graph.add_node("llm", self.call_openai)
         graph.add_node("action", self.take_action)
-        #graph.add_node("end", self.parse_final_output)
-
-        #graph.add_conditional_edges("llm", self.exists_action, {True: "action", False: "end"})
         graph.add_conditional_edges("llm", self.exists_action, {True: "action", False: END})
         graph.add_edge("action", "llm")
-
         graph.set_entry_point("llm")
-        #graph.set_finish_point("end")
 
         self.graph = graph.compile()
         self.tool_list = {t.name: t for t in tool_list}
@@ -33,32 +31,29 @@ class Agent:
 
 
     def call_openai(self, state: AgentState):
-        #("Calling open AI")
         messages = state['messages']
         if self.system:
             messages = [SystemMessage(content=self.system)] + messages
         message = self.model.invoke(messages)
         return {'messages': [message]}
 
+
     def exists_action(self, state: AgentState):
         result = state['messages'][-1]
-        #print("in exists action", result.tool_calls)
         return len(result.tool_calls) > 0
+
 
     def take_action(self, state: AgentState):
         tool_calls = state['messages'][-1].tool_calls
         results = []
         for t in tool_calls:
-            #print(f"Calling: {t}")
             result = self.tool_list[t['name']].invoke(t['args'])
             results.append(ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)))
-        # print("Back to the model!")
         return {'messages': results}
 
+
     def parse_final_output(self, state: AgentState):
-        print("Parsing final output")
         message = state['messages'][-1]  # | self.model.output_parser
-        #response = JsonOutputParser(pydantic_object=tools.Guidance).parse(message.content)
         response = MarkdownListOutputParser().parse(message.content)
         return {'messages': [response]}
 
@@ -116,6 +111,7 @@ class PrecisionFarming:
                 Explain your rationale for the action plan. What data did you consider to come up with the plan?
                 explain your reasoning for the timing. Provide reference to the weather and moisture levels and you used it in your reasoning
         """
+
 
     def get_insights(self, soil_ph = 6.5, soil_moisture = 30, latitude = 35.41, longitude= -80.58,
                      area_acres = 10, crop = "Corn", insect = None, leaf = None):

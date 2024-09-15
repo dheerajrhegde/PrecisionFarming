@@ -1,34 +1,36 @@
 import os
+from typing import TypeVar
 
 import numpy as np
 import requests
-import keras
 from keras.preprocessing import image
-
-
+import keras
 from langchain.agents import tool
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import PromptTemplate
 
 from RetrievalGraph import RetrievalGraph
 
+# Type variable for PIL image
+ImageBin = TypeVar('PIL.Image.Image')
 
+# Model for input schemas
 class InsectCropPlan(BaseModel):
     insect: str = Field(..., description="Insect to address")
     crop: str = Field(..., description="Crop to protect")
 
+
 class ImagePath(BaseModel):
     image_path: str = Field(..., description="Path of the image to check for disease")
 
-from typing import TypeVar
-ImageBin = TypeVar('PIL.Image.Image')
 
 class PImage(BaseModel):
     img: ImageBin = Field(..., description="Image in binary form of PIL.Image.Image")
 
+
 class Location(BaseModel):
-    latitude: str = Field(..., description="The latitude of the city, town, or village name to get the weather for")
-    longitude: str = Field(..., description="The longitude of the city, town, or village name to get the weather for")
+    latitude: str = Field(..., description="The latitude of the location to get the weather for")
+    longitude: str = Field(..., description="The longitude of the location to get the weather for")
 
 
 class ImageNumpy(BaseModel):
@@ -36,24 +38,23 @@ class ImageNumpy(BaseModel):
 
 
 class CropName(BaseModel):
-    crop_name: str = Field(..., description="Name of the field crop to get information for")
+    crop_name: str = Field(..., description="Name of the crop to get information for")
 
 
 class CropQuestion(BaseModel):
     crop_question: str = Field(..., description="Question on the crop")
-    crop: str = Field(..., description="Name of the field crop to get information for")
+    crop: str = Field(..., description="Name of the crop to get information for")
+
 
 class Guidance(BaseModel):
-    topic: str = Field(description="Tppic heading for the topic in your response. Example 'Watering plan'")
-    guidance: str = Field(description="Actual Guidance to give in your response for the topic")
+    topic: str = Field(..., description="Topic heading for your response, e.g. 'Watering plan'")
+    guidance: str = Field(..., description="Guidance to give in your response for the topic")
 
 
+# Load environment variable for weather API
 weather_api_key = os.getenv("WEATHER_API_KEY")
-#image_loader = ImageLoader()
-#multimodal_ef = OpenCLIPEmbeddingFunction()
-#multimodal_db_insect = chroma_client_insect.get_or_create_collection(name="multimodal_db", embedding_function=multimodal_ef, data_loader=image_loader)
-#multimodal_db_leaf = chroma_client_leaf.get_or_create_collection(name="multimodal_db", embedding_function=multimodal_ef, data_loader=image_loader)
 
+# Load models
 reconstructed_model_soybean_leaf = keras.models.load_model("models/leaf.soybean.mobilenetv3large.keras")
 reconstructed_model_cotton_leaf = keras.models.load_model("models/leaf.cotton.mobilenetv3large.keras")
 reconstructed_model_corn_leaf = keras.models.load_model("models/leaf.corn.mobilenetv3large.keras")
@@ -74,17 +75,16 @@ def predict_soybean_leaf_disease(img):
 #@tool(args_schema=PImage)
 def predict_cotton_leaf_disease(img):
     """ Tell whether the cotton leaf has a disease or is healthy """
-    #img = image.load_img(image_path, target_size=(224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     classes = reconstructed_model_cotton_leaf.predict(x)
     class_labels = ["Bacterial blight", "Curl Virus", "Fussarium Wilt", "Healthy"]
     return class_labels[np.argmax(classes)]
 
+
 #@tool(args_schema=PImage)
 def predict_corn_leaf_disease(img):
     """ Tell whether the corn leaf has a disease or is healthy """
-    #img = image.load_img(image_path, target_size=(224, 224))
     print("Predicting corn leaf disease", img, type(img))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
@@ -95,7 +95,6 @@ def predict_corn_leaf_disease(img):
 #@tool(args_schema=PImage)
 def predict_insect(img):
     """ Find out the insect in the image """
-
     print("Predicting insect", img, type(img))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
@@ -113,6 +112,7 @@ def get_weather_data(latitude, longitude):
     url = f"http://api.weatherapi.com/v1/forecast.json?key={weather_api_key}&q={latlong}&days=7"
     response = requests.get(url)
     return response.json()
+
 
 @tool
 def calculate_water_needed(field_moisture, desired_moisture, rainfall_expected, field_area):
@@ -137,6 +137,7 @@ def calculate_water_needed(field_moisture, desired_moisture, rainfall_expected, 
 
     return water_needed
 
+
 @tool
 def increase_ph(current_ph, desired_ph, soil_area_acres):
     """
@@ -153,6 +154,7 @@ def increase_ph(current_ph, desired_ph, soil_area_acres):
     ph_increase = desired_ph - current_ph
     lime_needed = ph_increase * soil_area_acres * 4840 / 1000 * 40
     return lime_needed
+
 
 @tool
 def decrease_ph(current_ph, desired_ph, soil_area_acres):
@@ -171,6 +173,7 @@ def decrease_ph(current_ph, desired_ph, soil_area_acres):
     aluminum_sulfate_needed = ph_decrease * soil_area_acres * 43560 / 10 * 2
     return aluminum_sulfate_needed
 
+
 @tool(args_schema=CropQuestion)
 def get_crop_info(crop_question, crop):
     """
@@ -178,12 +181,14 @@ def get_crop_info(crop_question, crop):
     """
     return retrieval_graph.invoke(crop_question, crop)
 
+
 @tool(args_schema=CropQuestion)
 def fertilizer_to_add(crop_question, crop):
     """
     Get the recommended fertilizer for a specific crop.
     """
     return retrieval_graph.invoke(crop_question, crop)
+
 
 class CropDisease(BaseModel):
     crop: str = Field(..., description="Crop to protect")
@@ -223,12 +228,14 @@ def tackle_disease(crop, disease_name, moisture, weather, irrigation_plan):
     print("Tackling disease", question, crop)
     return retrieval_graph.invoke(question, crop)
 
+
 class CropInsect(BaseModel):
     crop: str = Field(..., description="Crop to protect")
     insect_name: str = Field(..., description="Name of the disease")
     moisture: float = Field(..., description="Soil moisture level")
     weather: str = Field(..., description="Weather forecast")
     irrigation_plan: str = Field(..., description="Irrigation plan recommendation")
+
 
 @tool(args_schema=CropInsect)
 def tackle_insect(crop, insect_name, moisture, weather, irrigation_plan):

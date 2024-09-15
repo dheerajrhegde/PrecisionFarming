@@ -1,10 +1,10 @@
 from typing import List
+
 from typing_extensions import TypedDict
-import numpy as np
 import pprint
 import os
+
 from langchain import hub
-from langchain_chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,13 +13,13 @@ from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_upstage import UpstageGroundednessCheck
 from langchain.chains.query_constructor.base import AttributeInfo
-from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langgraph.graph import END, START, StateGraph
 from trulens.apps.langchain import WithFeedbackFilterDocuments
 from trulens.core import Feedback, TruSession
 from trulens.providers.openai import OpenAI
 from trulens.apps.langchain import TruChain
 from langchain.load import dumps, loads
+
 
 class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
@@ -54,22 +54,25 @@ class RetrievalGraph:
         self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
 
         # Get access to Chroma vector store that has NC state agriculture information
-        """metadata_field_info = [
-            AttributeInfo(
-                name="crop",
-                description="The crop on which the question is asked",
-                type="string",
-            ),
-        ]"""
-        self.vectorstore = Chroma(
-            persist_directory="./chroma_langchain_db",
-            collection_name="agriculture",
-            embedding_function=OpenAIEmbeddings())
 
-        """self.retriever = SelfQueryRetriever.from_llm(
-            llm=self.llm, vectorstore=vectorstore, metadata_field_info=metadata_field_info, verbose=True, document_contents="infromation on crops"
-        )"""
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        openai_api_version = "2023-05-15"
+        model = "text-embedding-ada-002"
+        vector_store_address = os.getenv("AZURE_SEARCH_ENDPOINT")
+        vector_store_password = os.getenv("AZURE_SEARCH_ADMIN_KEY")
+        print(vector_store_password)
+        embeddings: OpenAIEmbeddings = OpenAIEmbeddings(
+            openai_api_key=openai_api_key, openai_api_version=openai_api_version, model=model
+        )
+        from langchain_community.vectorstores.azuresearch import AzureSearch
+        index_name: str = "crop_guide"
 
+        self.vectorstore = AzureSearch(
+            azure_search_endpoint=vector_store_address,
+            azure_search_key=vector_store_password,
+            index_name=index_name,
+            embedding_function=embeddings.embed_query,
+        )
 
         # RAG Chain for checking relevance of retrieved documents
         prompt = hub.pull("rlm/rag-prompt")
@@ -142,7 +145,7 @@ class RetrievalGraph:
         provider = OpenAI()
         f_context_relevance_score = Feedback(provider.context_relevance)
 
-        retriever = self.vectorstore.as_retriever()
+        retriever = self.vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold":0.75})
         metadata_field_info = [
             AttributeInfo(
                 name="crop",
@@ -151,12 +154,12 @@ class RetrievalGraph:
             ),
         ]
 
-        retriever = SelfQueryRetriever.from_llm(
+        """retriever = SelfQueryRetriever.from_llm(
             llm=self.llm, vectorstore=self.vectorstore, metadata_field_info=metadata_field_info, verbose=True,
             document_contents="information on crops"
-        )
+        )"""
         filtered_retriever = WithFeedbackFilterDocuments.of_retriever(
-            retriever=retriever, feedback=f_context_relevance_score, threshold=0.75,
+            retriever=retriever, feedback=f_context_relevance_score, threshold=0.75
         )
 
 
@@ -197,6 +200,7 @@ class RetrievalGraph:
         print("documents retrieved from the vector store are", docs)
         return {"documents": docs}
 
+
     def generate(self, state):
         question = state["question"]
         documents = state["documents"]
@@ -233,6 +237,7 @@ class RetrievalGraph:
         better_question = self.question_rewriter.invoke({"question": question})
         return {"documents": documents, "question": better_question}
 
+
     def get_unique_union(self, documents: list[list]):
         """ Unique union of retrieved docs """
         # Flatten list of lists, and convert each Document to string
@@ -241,6 +246,7 @@ class RetrievalGraph:
         unique_docs = list(set(flattened_docs))
         # Return
         return [loads(doc) for doc in unique_docs]
+
 
     def web_search(self, state):
 
@@ -279,6 +285,7 @@ class RetrievalGraph:
 
         return {"documents": documents, "question": question}
 
+
     def nothing_retrieved(self, state):
         documents = state["documents"]
         if len(documents) == 0:
@@ -288,8 +295,6 @@ class RetrievalGraph:
 
     def not_grounded(self, state):
         return state["groundedness"]
-
-
 
 
 if __name__ == "__main__":
