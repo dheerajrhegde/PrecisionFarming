@@ -22,7 +22,8 @@ Current state of the project has built a RAG based core Precision Farming engine
 
 ## Overview of the core engine
 
-The core engine is developed using LangChain, LangGraph, and OpenAI. The engine takes a methodical approach to understanding the current state, analyzing it, and recommending a course of action. 
+The core engine is developed using OpenAI and Azure AI Search. The engine takes a methodical approach to understanding the current state, analyzing it, and recommending a course of action. 
+
 - Collect user input of location, crop, current soil moisture, insect image, leaf image
 - gets 7 day weather forecast and recommends irrigation plan
 - Predicts the insect in given image. Suggests actions to take based on information in crop guides available in vector stores
@@ -30,6 +31,13 @@ The core engine is developed using LangChain, LangGraph, and OpenAI. The engine 
 - Get optimal PH and moisture levels. Suggests actions to take based on information in crop guides available in vector stores
 - Searches the web incase relevent infromation is not available in the vector store
 - Finally, puts its all toegther into a actionable plan for the farmer
+
+## Architecture
+
+The core of the application is built on Azure OpenAI, Azure AI Search for RAG. Orchestration/workflow is through LanGraph and LangChain with deployment on Azure Application Services. 
+
+<img width="458" alt="image" src="https://github.com/user-attachments/assets/207e88c5-b4fb-4e31-ac46-05e8c2f73525">
+
 
 ## Technical details
 The anchor for the graph is a function calling agentic workflow that uses Open AI and LangGraph. The graph has at its disposal few tools that it can decide to call based on the need. And once it has all the informationm, it puts together a structured markdown response to be given back to the user.
