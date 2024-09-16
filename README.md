@@ -24,7 +24,9 @@ Current state of the project has built a RAG based core Precision Farming engine
 - [Purpose](#Purpose)
 - [Overview](#Overview)
 - [Architetcure](#Architecture)
-- [Technical Details](#Technical)
+- [Technical Details](#Implementation)
+- [Result](#Result)
+- [License](#License)
 
 ## Overview of the core engine
 
@@ -65,7 +67,7 @@ The core of the application is built on Azure OpenAI, Azure AI Search for RAG. O
    - The Docker container is deployed to an **Azure Web App**, allowing farmers to access the application via a web interface.
    - The application scales using Azure’s platform-as-a-service (PaaS) capabilities.
 
-## Technical details
+## Implementation
 The anchor for the graph is a function calling agentic workflow that uses Open AI and LangGraph. The graph has at its disposal few tools that it can decide to call based on the need. And once it has all the informationm, it puts together a structured markdown response to be given back to the user.
 
 
@@ -187,8 +189,28 @@ Select your container image and deploy after entering other required fields. Onc
 
 
 
-## Final response
+## Result
 <img width="1117" alt="image" src="https://github.com/user-attachments/assets/fb76a47c-2f11-4896-9921-7174af7a58bd">
 
+## License
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 
