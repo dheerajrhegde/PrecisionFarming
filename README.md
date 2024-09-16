@@ -22,7 +22,7 @@ Current state of the project has built a RAG based core Precision Farming engine
 
 ## Table of Contents
 - [Purpose](##Purpose)
-- [Overview](##Overview)
+- [Overview](##Overview of the core engine)
 
 
 ## Overview of the core engine
