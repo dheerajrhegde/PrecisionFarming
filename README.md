@@ -1,3 +1,6 @@
+# Precision Farming
+
+## Purpose
 Purpose of this project is to build a precision engine that can help farmers automate their farming operations. And do so in a very optimal way. 
 
 <img width="612" alt="image" src="https://github.com/user-attachments/assets/30268dfd-f121-43b4-b319-2b885098d775">
@@ -99,6 +102,55 @@ export UPSTAGE_API_KEY="your API key"
 export WEATHER_API_KEY="your API key"
 streamlit run StreamLitApp.py
 ```
+
+***Deploying on Azure WebApp***
+
+Prerequisites - Docker installed on your laptop (Linux) . Can be installed using this convenience script.
+```commandline
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+```
+
+clone the repository. 
+```commandlline
+git clone https://github.com/dheerajrhegde/PrecisionFarming/tree/main
+```
+
+Build the docker image (using provided Dockerfile). Very that image is created
+```commandline
+sudo docker build -t precision-farming-app .
+sudo docker images
+```
+
+Run the docker image as a container and ensure it is running.
+```commandline
+sudo docker run -p 8501:8501 precision-farming-app
+sudo docker ps
+```
+
+Verify application us running and working as expeceted using https://localhost:8501/
+
+Create an Azure Container Registry at https://portal.azure.com. Collect the access credentials from "access keys"
+Install Azure CLI and authenticate your self using 
+```commandline
+az login
+```
+
+Authenticate and access container registry. And push the image to the ACR
+```commandline
+az acr login --name azureraghackathon
+sudo docker tag precision-farming-app:latest raghackathon.azurecr.io/precision-farming-app:latest
+sudo docker push raghackathon.azurecr.io/precision-farming-app:latest
+```
+
+Create a webap on https://portal.azure.com/. Make sure you select
+- Instance Details Publish as "Container" in Basics tab
+- In container tab, select image soruce as "Azure Container registry"
+
+Select your container image and deploy after entering other required fields. Once deployed, use the Default Domain from the App Service and access the application.
+
+
+
 
 ## Final response
 <img width="1117" alt="image" src="https://github.com/user-attachments/assets/fb76a47c-2f11-4896-9921-7174af7a58bd">
