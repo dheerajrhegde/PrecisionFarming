@@ -105,7 +105,7 @@ streamlit run StreamLitApp.py
 
 ***Deploying on Azure WebApp***
 
-Prerequisites - Docker installed on your laptop (Linux) . Can be installed using this convenience script.
+Prerequisites - Docker installed on your laptop (Linux) or Azure VM. Can be installed using this convenience script.
 ```commandline
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
@@ -128,7 +128,7 @@ sudo docker run -p 8501:8501 precision-farming-app
 sudo docker ps
 ```
 
-Verify application us running and working as expeceted using https://localhost:8501/
+Verify application us running and working as expeceted using https://localhost:8501/. If you are using Azure VM, make sure you have an NSG for your resource group and allow ingress and egress. 
 
 Create an Azure Container Registry at https://portal.azure.com. Collect the access credentials from "access keys"
 Install Azure CLI and authenticate your self using 
