@@ -20,6 +20,11 @@ Current state of the project has built a RAG based core Precision Farming engine
 
 <img width="612" alt="image" src="https://github.com/user-attachments/assets/bcb426a8-84d4-4d69-9d28-867b07f63714">
 
+## Table of Contents
+- [Purpose](##Purpose)
+- [Overview](##Overview)
+
+
 ## Overview of the core engine
 
 The core engine is developed using OpenAI and Azure AI Search. The engine takes a methodical approach to understanding the current state, analyzing it, and recommending a course of action. 
