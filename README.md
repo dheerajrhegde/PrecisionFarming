@@ -5,7 +5,7 @@ Purpose of this project is to build a precision engine that can help farmers aut
 
 <img width="612" alt="image" src="https://github.com/user-attachments/assets/30268dfd-f121-43b4-b319-2b885098d775">
 
-The visionn for the end result would be
+The vision for the end result is
 - recommend the best time to plant the crops taking into account the climate requirements and the forecast of the best time to sell the crop
 - Once planted, automate the aggregation of data
   - soil information from gauges in the farm land
