@@ -38,6 +38,26 @@ The core of the application is built on Azure OpenAI, Azure AI Search for RAG. O
 
 <img width="458" alt="image" src="https://github.com/user-attachments/assets/207e88c5-b4fb-4e31-ac46-05e8c2f73525">
 
+1. **Frontend/UI (Streamlit)**:
+   - **Streamlit Application**: The frontend that farmers interact with to input data such as location, soil moisture, insect images, and crop type.
+
+2. **Backend Services**:
+   - **Core Engine**: The central component that handles decision-making using LangChain, LangGraph, and OpenAI to provide insights and recommendations.
+   - **Azure AI Search (Vector Database)**: Stores crop guides (for soybeans, corn, cotton) and enables retrieval for decision-making. This database can be populated by running the `CropvectorStoreAzureAISearch.py` script.
+   - **Weather API Integration**: Fetches real-time weather data to guide irrigation and planting recommendations.
+   - **Image Classification (TensorFlow)**: Identifies pests and leaf diseases using CNN.
+
+3. **Data Flow**:
+   - **User Input**: Farmers provide input such as location, crop type, soil moisture, insect images, and leaf images.
+   - **Workflow Engine (LangChain, LangGraph)**: Based on inputs, the engine retrieves relevant data from the vector database and integrates weather API information to recommend actions.
+   - **Action Plan**: Outputs the recommended action plan for the farmer, such as when to water, how to treat pests, etc.
+
+4. **Containerization (Docker)**:
+   - The application is containerized using Docker and pushed to **Azure Container Registry (ACR)**.
+
+5. **Deployment (Azure Web App)**:
+   - The Docker container is deployed to an **Azure Web App**, allowing farmers to access the application via a web interface.
+   - The application scales using Azure’s platform-as-a-service (PaaS) capabilities.
 
 ## Technical details
 The anchor for the graph is a function calling agentic workflow that uses Open AI and LangGraph. The graph has at its disposal few tools that it can decide to call based on the need. And once it has all the informationm, it puts together a structured markdown response to be given back to the user.
