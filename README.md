@@ -56,11 +56,12 @@ tackle_insect, tackle_disease - uses the retrieval graph to get needed informati
 
 Below parts together for a Corrective RAG system gets the best possible retrieval using multi-query, query rewriting, active retrieval.
 
-Retrieve - Uses multi query translation to break down larger and complex queries into simple questions to do a vector search on. Uses metadata (SelfQueryRetriever) filtering to only get chunks from the guide that is related to the crop the farmer is growing. 
+Retrieve - Uses multi query translation to break down larger and complex queries into simple questions to do a vector search on.  Use a relevence search to get the most appropriate content for you.
 
-Context relevance - Uses trulens to confirm that retrieved context is relevent to the question to answer. Since we are using trulens.apps.langchain.WithFeedbackFilterDocuments, we only need to check if there is any document available in the "documents" state
 
-Web Search - Performs a websearch using Tivaly to get information in case reteival does not give us the needed information. PArt of the CRAG system.
+Context relevance - Uses trulens to confirm that retrieved context is relevent to the question to answer. Since we are using trulens.apps.langchain.**WithFeedbackFilterDocuments**, we only need to check if there is any document available in the "documents" state
+
+Web Search - Performs a websearch using Tivaly to get information in case reteival does not give us the needed information. Part of the **CRAG system**.
 
 Generate Response - Simple LLM call with context to generate the answer. 
 
