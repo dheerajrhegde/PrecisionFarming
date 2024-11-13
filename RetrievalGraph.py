@@ -3,12 +3,11 @@ from typing import List
 from typing_extensions import TypedDict
 import pprint
 import os
-
 from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain.schema import Document
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_upstage import UpstageGroundednessCheck
@@ -16,10 +15,15 @@ from langchain.chains.query_constructor.base import AttributeInfo
 from langgraph.graph import END, START, StateGraph
 from trulens.apps.langchain import WithFeedbackFilterDocuments
 from trulens.core import Feedback, TruSession
-from trulens.providers.openai import OpenAI
+from trulens.providers.openai import AzureOpenAI
 from trulens.apps.langchain import TruChain
 from langchain.load import dumps, loads
 
+UPSTAGE_API_KEY="up_VjWl59uApKL4H69akYmQJNRGEjR2H"
+AZURE_DEPLOYMENT="gpt-4o"
+API_VERSION="2024-05-01-preview"
+AZURE_ENDPOINT="https://agtech-llm-openai.openai.azure.com"
+API_KEY="5366f9c0121f4852afeb69388c2aff3a"
 
 class GradeDocuments(BaseModel):
     """Binary score for relevance check on retrieved documents."""
@@ -51,18 +55,20 @@ class RetrievalGraph:
     def __init__(self):
         # Initialize Tavily
         self.web_search_tool = TavilySearchResults(k=3)
-        self.llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
+        self.llm = AzureChatOpenAI(azure_deployment=AZURE_DEPLOYMENT, 
+                                   api_version=API_VERSION, 
+                                   azure_endpoint=AZURE_ENDPOINT,
+                                   api_key=API_KEY)
 
         # Get access to Chroma vector store that has NC state agriculture information
 
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        openai_api_version = "2023-05-15"
+        #openai_api_key = os.getenv("OPENAI_API_KEY")
+        #openai_api_version = "2023-05-15"
         model = "text-embedding-ada-002"
         vector_store_address = os.getenv("AZURE_SEARCH_ENDPOINT")
         vector_store_password = os.getenv("AZURE_SEARCH_ADMIN_KEY")
-        print(vector_store_password)
-        embeddings: OpenAIEmbeddings = OpenAIEmbeddings(
-            openai_api_key=openai_api_key, openai_api_version=openai_api_version, model=model
+        embeddings: AzureOpenAIEmbeddings = AzureOpenAIEmbeddings(
+            api_key=API_KEY, model=model, azure_endpoint=AZURE_ENDPOINT
         )
         from langchain_community.vectorstores.azuresearch import AzureSearch
         index_name: str = "crop_guide"
@@ -131,83 +137,69 @@ class RetrievalGraph:
         # Compile
         self.app = workflow.compile()
         pprint.pprint(self.app.get_graph().draw_ascii())
+        
+        # Initialize the retrieved_docs_cache
+        self.retrieved_docs_cache = {}
 
     def invoke(self, question, crop):
         os.environ["LANGCHAIN_TRACING_V2"] = "True"
         os.environ["LANGCHAIN_PROJECT"] = "RetrievalGraph"
-        return self.app.invoke({"question": question, "crop":"crop"})["generation"]
+        return self.app.invoke({"question": question, "crop": crop})["generation"]
 
 
     def retrieve(self, state):
-
         question = state["question"]
+        crop = state["crop"]
+        
+        # Check the cache first
+        cache_key = (question, crop)
+        print("Cacche key is", cache_key)
+        if cache_key in self.retrieved_docs_cache:
+            print("Getting documents from Cache")
+            return {"documents": self.retrieved_docs_cache[cache_key]}
+        
+        # If not in cache, retrieve documents
         print(question)
-        provider = OpenAI()
-        f_context_relevance_score = Feedback(provider.context_relevance)
-
-        retriever = self.vectorstore.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold":0.75})
-        metadata_field_info = [
-            AttributeInfo(
-                name="crop",
-                description="The crop on which the question is asked",
-                type="string",
-            ),
-        ]
-
-        """retriever = SelfQueryRetriever.from_llm(
-            llm=self.llm, vectorstore=self.vectorstore, metadata_field_info=metadata_field_info, verbose=True,
-            document_contents="information on crops"
-        )"""
-        filtered_retriever = WithFeedbackFilterDocuments.of_retriever(
-            retriever=retriever, feedback=f_context_relevance_score, threshold=0.75
+        # Combine crop context with question directly instead of generating subquestions
+        enhanced_question = f"Regarding {crop}: {question}"
+        
+        # First attempt with higher threshold
+        retriever = self.vectorstore.as_retriever(
+            search_type="similarity_score_threshold",
+            search_kwargs={"score_threshold": 0.75}
         )
-
-
-        template = """You are an AI language model assistant. Your task is to break down the larger question
-                you get into smaller subquestions to do a vector store retrieval on. 
-
-                Provide a list of subquestions that can be used to search the web for more information.
-
-                Original question: {question}
-                Crop: {crop}
-                """
-        prompt_sub_q = ChatPromptTemplate.from_template(template)
-
-        from langchain_core.output_parsers import StrOutputParser
-        from langchain_openai import ChatOpenAI
-
-        generate_queries = (
-                prompt_sub_q
-                | ChatOpenAI(temperature=0)
-                | StrOutputParser()
-                | (lambda x: x.split("\n"))
-        )
-
-        #retrieval_chain = generate_queries | map(filtered_retriever.get_relevant_documents) | self.get_unique_union
-        questions = generate_queries.invoke({"question": question, "crop": state["crop"]})
-        print("questions asked ", questions)
-
-        retrieved_docs = []
-        for question in questions:
-            docs = filtered_retriever.get_relevant_documents(question)
-            print("question", question)
-            print("docs", docs)
-            retrieved_docs.append(docs[:])
-
-        print("retrieved documents ...", retrieved_docs)
-        docs = self.get_unique_union(retrieved_docs)
-
-        print("documents retrieved from the vector store are", docs)
+        
+        # Single retrieval operation
+        docs = retriever.get_relevant_documents(enhanced_question)
+        
+        # Optional: If results are too few, lower threshold and try once more
+        if len(docs) < 2:
+            retriever = self.vectorstore.as_retriever(
+                search_type="similarity_score_threshold",
+                search_kwargs={"score_threshold": 0.65}
+            )
+            additional_docs = retriever.get_relevant_documents(enhanced_question)
+            docs.extend(additional_docs)
+        
+        # Limit total documents if we got too many
+        docs = docs[:5]
+        
+        # Cache the documents
+        self.retrieved_docs_cache[cache_key] = docs
+        
         return {"documents": docs}
 
 
     def generate(self, state):
         question = state["question"]
         documents = state["documents"]
-        provider = OpenAI()
+        provider = AzureChatOpenAI(azure_deployment=AZURE_DEPLOYMENT,
+                                   api_version=API_VERSION,
+                                   azure_endpoint=AZURE_ENDPOINT,
+                                   api_key=API_KEY)
         generation = self.rag_chain.invoke({"context": documents, "question": question})
 
-        groundedness_check = UpstageGroundednessCheck()
+        groundedness_check = UpstageGroundednessCheck(upstage_api_key='up_VjWl59uApKL4H69akYmQJNRGEjR2H')
 
         request_input = {
             "context": documents,
@@ -215,7 +207,7 @@ class RetrievalGraph:
         }
 
         response = groundedness_check.invoke(request_input)
-        print("Groundedness response: ", response)
+        #print("Groundedness response: ", response)
         return {"documents": documents, "question": question, "generation": generation, "groundedness": response}
 
 
@@ -249,24 +241,26 @@ class RetrievalGraph:
 
 
     def web_search(self, state):
-
         question = state["question"]
         documents = state["documents"]
 
         template = """You are an AI language model assistant. Your task is to break down the larger question
         you get into smaller subquestions to do a web search on. 
-        
+
         Provide a list of subquestions that can be used to search the web for more information.
-        
+
         Original question: {question}"""
         prompt_sub_q = ChatPromptTemplate.from_template(template)
 
         from langchain_core.output_parsers import StrOutputParser
-        from langchain_openai import ChatOpenAI
+        from langchain_openai import AzureChatOpenAI
 
         generate_queries = (
                 prompt_sub_q
-                | ChatOpenAI(temperature=0)
+                | AzureChatOpenAI(azure_deployment=AZURE_DEPLOYMENT, 
+                                     api_version=API_VERSION, 
+                                     azure_endpoint=AZURE_ENDPOINT, 
+                                     temperature=0)
                 | StrOutputParser()
                 | (lambda x: x.split("\n"))
         )
@@ -275,9 +269,9 @@ class RetrievalGraph:
         docs = retrieval_chain.invoke({"question": question})
 
         # Web search
-        print("Web search for: ", question)
+        #print("Web search for: ", question)
         #docs = self.web_search_tool.invoke({"query": question})
-        print(type(docs), docs)
+        #print(type(docs), docs)
 
         web_results = "\n".join([d["content"] for d in docs if isinstance(d, dict)])
         web_results = Document(page_content=web_results)

@@ -17,3 +17,11 @@ trulens-core
 trulens-apps-langchain
 trulens-providers-langchain
 trulens-providers-openai
+azure-search-documents==11.4.0
+azure-identity
+python-dotenv
+pytest
+streamlit-folium
+folium
+streamlit-modal
+requests

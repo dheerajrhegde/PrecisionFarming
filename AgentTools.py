@@ -52,7 +52,7 @@ class Guidance(BaseModel):
 
 
 # Load environment variable for weather API
-weather_api_key = os.getenv("WEATHER_API_KEY")
+weather_api_key = "1fa57cfecf054ea1974113726241310"
 
 # Load models
 reconstructed_model_soybean_leaf = keras.models.load_model("models/leaf.soybean.mobilenetv3large.keras")
